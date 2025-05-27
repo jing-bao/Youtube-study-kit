@@ -84,8 +84,15 @@ export default function ChatScreen({ currentSearch }) {
                 let keywords = "";
                 try {
                     const prompt = "Return the comma-separated keywords you generated earlier. Do not include any additional explanations or text, just the keywords themselves.";
+                    console.time("generate keywords");
                     keywords = await session.prompt(prompt);
+                    console.timeEnd("generate keywords");
                     console.log(keywords);
+                    //console.time("generate keywords again");
+                    //const prompt2 = "Return again the comma-separated keywords you generated earlier. Do not include any additional explanations or text, just the keywords themselves.";
+                    //keywords = await session.prompt(prompt2);
+                    //console.log(keywords);
+                    //console.timeEnd("generate keywords again");
                 } catch (error) {
                     console.log(error, "error in generating keywords");
                 }
