@@ -7,6 +7,7 @@ import { LanguageContext } from '../context/LanguageContext'
 import { detectLanguage } from '../lib/detectLanguage'
 import { initializeSummarizer } from '../lib/initializeSummarizer'
 import { SearchContext } from '../context/SearchContext'
+import { generateKeywordMap } from '../lib/generateKeywordMap'
 import TrainingChromePrompt from '../lib/TrainingChromePrompt'
 import PromptSessionIdentifierKeywordsPrompt from '../lib/PromptSessionIdentifierKeywordPrompt'
 import MasterSessionPrompt from '../lib/MasterSessionPrompt'
@@ -55,56 +56,12 @@ export default function ChatScreen({ currentSearch }) {
                 }
                 return { text: translatedText, offset: subtitleObject.offset };
             }));
-
-            let completeSubtitles = JSON.stringify(completeSubtitlesArray);
-            console.log("these are completeSubtitles", completeSubtitles);
-
-
-            const subtitleChunkArray = [];
-            for (let i = 0; i < completeSubtitles.length; i += 9500) {
-                subtitleChunkArray.push(completeSubtitles.slice(i, i + 9500));
-            }
-
-            console.log(subtitleChunkArray);
-
-            const promptSessionArray = await Promise.all(subtitleChunkArray.map(async (subtitleChunk) => {
-                const updatedSubtitleChunkPrompt = TrainingChromePrompt(subtitleChunk, currentSearch, outputLanguage);
-                const session = await window?.LanguageModel?.create({
-                    initialPrompts: [{ role: "system", content: updatedSubtitleChunkPrompt}]
-                });
-                return session;
-            }));
-
-            console.log(promptSessionArray, "promptSessionArray");
-
+            
+            console.log("completeSubtitlesArray:", completeSubtitlesArray);
+            const { keywordMap, promptSessionArray } = await generateKeywordMap(completeSubtitlesArray, currentSearch);
             setPromptSessionArray(promptSessionArray);
-
-            const PromptSessionIdentifierKeywordsArray = await Promise.all(promptSessionArray.map(async (session) => {
-                console.log(session);
-                let keywords = "";
-                try {
-                    const prompt = "Return the comma-separated keywords you generated earlier. Do not include any additional explanations or text, just the keywords themselves.";
-                    console.time("generate keywords");
-                    keywords = await session.prompt(prompt);
-                    console.timeEnd("generate keywords");
-                    console.log(keywords);
-                    //console.time("generate keywords again");
-                    //const prompt2 = "Return again the comma-separated keywords you generated earlier. Do not include any additional explanations or text, just the keywords themselves.";
-                    //keywords = await session.prompt(prompt2);
-                    //console.log(keywords);
-                    //console.timeEnd("generate keywords again");
-                } catch (error) {
-                    console.log(error, "error in generating keywords");
-                }
-                return keywords;
-            }));
-
-            console.log(PromptSessionIdentifierKeywordsArray, "PromptSessionIdentifierKeywordsArray");
-
-            const keywordMap = {};
-            for (let i = 0; i < PromptSessionIdentifierKeywordsArray.length; i++) {
-                keywordMap[i] = PromptSessionIdentifierKeywordsArray[i];
-            }
+            console.log("promptSessionArray:", promptSessionArray);
+            console.log("keywordMap", keywordMap);
 
             const masterPrompt = `You are a router for selecting the appropriate AI model based on user queries.  You have access to a map of keywords associated with each model.
 

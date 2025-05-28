@@ -1,3 +1,47 @@
+/* global chrome */
+
+import { getSubTitles } from './lib/getSubtitles'
+import { detectLanguage } from './lib/detectLanguage'
+import { generateKeywordMap } from './lib/generateKeywordMap'
+
+const keywordsGenerating = {};
+
+async function generateAndStoreKeywordsForVideo(videoId) {
+        if (keywordsGenerating[videoId]) {console.log("already generating"); return;}
+    keywordsGenerating[videoId] = true;
+    try {
+        const result = await chrome.storage.local.get([`keywords_${videoId}`]);
+        if (result[`keywords_${videoId}`]) {
+            keywordsGenerating[videoId] = false;
+            console.log("already has kewords");
+            return;
+        }
+//Check ai available
+// Check hash of subtitles
+
+	const subtitles = await getSubTitles(videoId);
+        console.log(subtitles);
+        if (subtitles && subtitles.text && subtitles.subtitles) {
+            const rawCompleteSubtitles = subtitles.subtitles.map((subtitleObject) => ({
+                text: subtitleObject.text,
+                offset: parseInt(subtitleObject.offset),
+            }));
+
+            const subtitlesLanguage = await detectLanguage(rawCompleteSubtitles[0].text);
+            if (subtitlesLanguage !== 'en') {
+	        return;
+	    }
+            
+            const { keywordMap } = await generateKeywordMap(rawCompleteSubtitles, videoId);
+            console.log("keywordMap", keywordMap);
+        }
+    } catch (err) {
+        console.log("Error generating keywords:", err);
+    } finally {
+        keywordsGenerating[videoId] = false;
+    }
+}
+
 async function saveImage(videoId, imgUrl, imgText, ytLink, timestamp, videoHeading) {
     const data = await chrome.storage.local.get(["userData"]);
     const previousData = data.userData;
@@ -92,6 +136,7 @@ let getPlayingScreenshot = () => {
                         VideoLink = 'https://www.youtube.com/watch?v=' + currentVideo + "&t=" + timestamp + "s"
                     }
                     await saveImage(currentVideo, newFileSrc, Note, VideoLink, timestamp, videoTitle);
+                    generateAndStoreKeywordsForVideo(currentVideo);
                 }
             });
             reader2.readAsDataURL(newFile);

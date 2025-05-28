@@ -34,11 +34,13 @@ export default function ChatSearch({ messages, setMessages, timestampedSubtitles
 
     const handleSubmit = async (model) => {
         if (searchQuery.trim() && !disabled) {
+            console.log("handleSubmit");
             setDisabled(true);
             setMessages((prevMessages) => [...prevMessages, searchQuery, ""]);
             setSearchQuery("");
             if (model == 'chrome-built-in') {
                 try {
+                    console.log("masterPromptSession", masterPromptSession);
                     console.time("masterPrompt");
                     const sessionIdString = await masterPromptSession.prompt(searchQuery);
                     console.log("sessionIdString", sessionIdString);
@@ -54,6 +56,7 @@ export default function ChatSearch({ messages, setMessages, timestampedSubtitles
                     }
                     console.timeEnd("masterPrompt");
                     console.time("getStreamingPromptResult");
+                        console.log("selected session", promptSessionArray[promptSessionId]);
 
                     // Call `getStreamingPromptResult` with a valid `promptSessionId`
                     const UpdatedQuery = searchQuery + " give me the response in the described format, give integer time after each paragraph in curly braces for example {45} etc. Never include time range in curly braces. Give answer in headings, subheadings and bullet points"
