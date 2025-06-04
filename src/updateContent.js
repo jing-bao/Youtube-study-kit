@@ -32,7 +32,10 @@ async function generateAndStoreKeywordsForVideo(videoId) {
 	        return;
 	    }
             
-            const { keywordMap } = await generateKeywordMap(rawCompleteSubtitles, videoId);
+            const { keywordMap, promptSessionArray } = await generateKeywordMap(rawCompleteSubtitles, videoId);
+            promptSessionArray.forEach(session => {
+                session.destroy();
+            });
             console.log("keywordMap", keywordMap);
         }
     } catch (err) {

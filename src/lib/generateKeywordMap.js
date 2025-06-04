@@ -27,19 +27,19 @@ export async function generateKeywordMap(completeSubtitlesArray, videoId) {
     if (!keywordMap) {
         console.log("Generate keywords");
         const prompt = "Return the comma-separated keywords you generated earlier. Do not include any additional explanations or text, just the keywords themselves.";
+        console.time("Generate keywords");
         const PromptSessionIdentifierKeywordsArray = await Promise.all(
             promptSessionArray.map(async (session) => {
                 let keywords = "";
                 try {
-                    console.time("Generate keywords");
                     keywords = await session.prompt(prompt);
-                    console.timeEnd("Generate keywords");
                 } catch (error) {
                     console.log(error, "error in generating keywords");
                 }
                 return keywords;
             })
         );
+        console.timeEnd("Generate keywords");
 
         keywordMap = {};
         for (let i = 0; i < PromptSessionIdentifierKeywordsArray.length; i++) {

@@ -41,7 +41,7 @@ export default function ChatSearch({ messages, setMessages, timestampedSubtitles
             if (model == 'chrome-built-in') {
                 try {
                     console.log("masterPromptSession", masterPromptSession);
-                    console.time("masterPrompt");
+                    console.time("run-masterPrompt");
                     const sessionIdString = await masterPromptSession.prompt(searchQuery);
                     console.log("sessionIdString", sessionIdString);
 
@@ -54,7 +54,7 @@ export default function ChatSearch({ messages, setMessages, timestampedSubtitles
                     if (Number.isNaN(promptSessionId) || promptSessionId >= promptSessionArray.length) {
                         promptSessionId = 0;
                     }
-                    console.timeEnd("masterPrompt");
+                    console.timeEnd("run-masterPrompt");
                     console.time("getStreamingPromptResult");
                         console.log("selected session", promptSessionArray[promptSessionId]);
 

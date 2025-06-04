@@ -41,7 +41,9 @@ export default function ChatScreen({ currentSearch }) {
 
     async function initiateChromePromptSession(videoSubTitles) {
         try {
+            console.log("setChromePromptSessionLoading true", performance.now());
             setChromePromptSessionLoading(true);
+                console.time("handleSubtitles");
             const rawCompleteSubtitles = videoSubTitles.subtitiles.map((subtitleObject) => ({
                 text: subtitleObject.text,
                 offset: parseInt(subtitleObject.offset),
@@ -58,10 +60,14 @@ export default function ChatScreen({ currentSearch }) {
             }));
             
             console.log("completeSubtitlesArray:", completeSubtitlesArray);
+                console.timeEnd("handleSubtitles");
+                console.time("getkeywords-sessions");
             const { keywordMap, promptSessionArray } = await generateKeywordMap(completeSubtitlesArray, currentSearch);
             setPromptSessionArray(promptSessionArray);
+                console.timeEnd("getkeywords-sessions");
             console.log("promptSessionArray:", promptSessionArray);
             console.log("keywordMap", keywordMap);
+                console.time("mastersessionprmopt");
 
             const masterPrompt = `You are a router for selecting the appropriate AI model based on user queries.  You have access to a map of keywords associated with each model.
 
@@ -97,13 +103,17 @@ export default function ChatScreen({ currentSearch }) {
             Response: session1
             \`\`\`
             `;
+                console.timeEnd("mastersessionprmopt");
 
-            console.log("master Prompt", masterPrompt);
+            //console.log("master Prompt", masterPrompt);
             try {
+                console.time("mastersession");
                 const MasterSession = await window?.LanguageModel?.create({
                     initialPrompts: [{ role: "system", content: masterPrompt }]
                 });
+                console.timeEnd("mastersession");
                 setMasterPromptSession(MasterSession);
+                console.log("Master Session:", MasterSession);
             } catch (error) {
                 console.log(error, "error in generating master prompt")
             }
@@ -111,6 +121,7 @@ export default function ChatScreen({ currentSearch }) {
         } catch (error) {
             console.error("Error initiating prompt sessions:", error); // More specific error message
         } finally {
+            console.log("setChromePromptSessionLoading false", performance.now());
             setChromePromptSessionLoading(false);
         }
     }
@@ -126,10 +137,10 @@ export default function ChatScreen({ currentSearch }) {
     }, [currentSearch])
 
     useEffect(() => {
-        if (videoSubTitles) {
+        if (videoSubTitles && Array.isArray(videoSubTitles.subtitiles) && videoSubTitles.subtitiles.length > 0) {
             if (model == 'chrome-built-in') {
+                console.log("start:", videoSubTitles);
                 initiateChromePromptSession(videoSubTitles);
-                initiateSummarizer(videoSubTitles);
             }
         }
         return () => {
@@ -138,7 +149,15 @@ export default function ChatScreen({ currentSearch }) {
             });
         }
     }, [model, videoSubTitles])
-
+/*
+    useEffect(() => {
+        if (masterPromptSession && videoSubTitles && Array.isArray(videoSubTitles.subtitiles) && videoSubTitles.subtitiles.length > 0) {
+            if (model == 'chrome-built-in') {
+                initiateSummarizer(videoSubTitles);
+            }
+        }
+    }, [masterPromptSession])
+*/
     return (
         <div className='flex text-white px-5 h-full'>
             <Tabs defaultValue="Chat" className="w-full flex flex-col">
