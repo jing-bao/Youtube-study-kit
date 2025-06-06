@@ -21,7 +21,8 @@ export default function ChatScreen({ currentSearch }) {
     const [summary, setSummary] = useState(null);
     const [chromePromptSessionLoading, setChromePromptSessionLoading] = useState(false);
     const [summaryLoading, setSummaryLoading] = useState(false);
-    const [promptSessionArray, setPromptSessionArray] = useState([]);
+    const [promptSessionArray, setPromptSessionArray] = useState({});
+    const [subtitleChunkArray, setSubtitleChunkArray] = useState([]);
     const [masterPromptSession, setMasterPromptSession] = useState(null);
 
     async function fetchVideoSubtitiles(videoId) {
@@ -62,8 +63,9 @@ export default function ChatScreen({ currentSearch }) {
             console.log("completeSubtitlesArray:", completeSubtitlesArray);
                 console.timeEnd("handleSubtitles");
                 console.time("getkeywords-sessions");
-            const { keywordMap, promptSessionArray } = await generateKeywordMap(completeSubtitlesArray, currentSearch);
-            setPromptSessionArray(promptSessionArray);
+            const { keywordMap, subtitleChunkArray } = await generateKeywordMap(completeSubtitlesArray, currentSearch);
+            setPromptSessionArray({});
+            setSubtitleChunkArray(subtitleChunkArray);
                 console.timeEnd("getkeywords-sessions");
             console.log("promptSessionArray:", promptSessionArray);
             console.log("keywordMap", keywordMap);
@@ -144,7 +146,7 @@ export default function ChatScreen({ currentSearch }) {
             }
         }
         return () => {
-            promptSessionArray.forEach(session => {
+            Object.values(promptSessionArray).forEach(session => {
                 session.destroy();
             });
         }
@@ -170,6 +172,8 @@ export default function ChatScreen({ currentSearch }) {
                     <Chat
                         masterPromptSession={masterPromptSession}
                         promptSessionArray={promptSessionArray}
+                        setPromptSessionArray={setPromptSessionArray}
+                        subtitleChunkArray={subtitleChunkArray}
                         messages={messages}
                         setMessages={setMessages}
                         timestampedSubtitles={videoSubTitles.subtitiles}

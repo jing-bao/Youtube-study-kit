@@ -6,7 +6,9 @@ export async function generateKeywordMap(completeSubtitlesArray, videoId) {
     const cacheKey = `keywords_${videoId}`;
     const cache = await chrome.storage.local.get([cacheKey]);
     let keywordMap = cache[cacheKey] || null;
-    if (keywordMap) {console.log("found keywords:", keywordMap);}
+    if (keywordMap) {
+        console.log("found keywords:", keywordMap);
+    }
 
     const completeSubtitles = JSON.stringify(completeSubtitlesArray);
     const subtitleChunkArray = [];
@@ -15,24 +17,20 @@ export async function generateKeywordMap(completeSubtitlesArray, videoId) {
     }
     console.log(subtitleChunkArray);
 
-    const promptSessionArray = await Promise.all(
-        subtitleChunkArray.map(async (subtitleChunk) => {
-            const updatedSubtitleChunkPrompt = TrainingChromePrompt(subtitleChunk);
-            return await window?.LanguageModel?.create({
-                initialPrompts: [{ role: "system", content: updatedSubtitleChunkPrompt }]
-            });
-        })
-    );
-
     if (!keywordMap) {
         console.log("Generate keywords");
         const prompt = "Return the comma-separated keywords you generated earlier. Do not include any additional explanations or text, just the keywords themselves.";
         console.time("Generate keywords");
         const PromptSessionIdentifierKeywordsArray = await Promise.all(
-            promptSessionArray.map(async (session) => {
+            subtitleChunkArray.map(async (subtitleChunk) => {
                 let keywords = "";
                 try {
+                    const updatedSubtitleChunkPrompt = TrainingChromePrompt(subtitleChunk);
+                    const session = await window?.LanguageModel?.create({
+                        initialPrompts: [{ role: "system", content: updatedSubtitleChunkPrompt }]
+                    });
                     keywords = await session.prompt(prompt);
+                    session.destroy();
                 } catch (error) {
                     console.log(error, "error in generating keywords");
                 }
@@ -49,5 +47,14 @@ export async function generateKeywordMap(completeSubtitlesArray, videoId) {
         await chrome.storage.local.set({ [cacheKey]: keywordMap });
     }
 
-    return { keywordMap, promptSessionArray };
+    return { keywordMap, subtitleChunkArray };
+}
+
+export async function generatePromptSession(subtitleChunk) {
+    console.log("generatePromptSession");
+    const updatedSubtitleChunkPrompt = TrainingChromePrompt(subtitleChunk);
+    const session = await window?.LanguageModel?.create({
+        initialPrompts: [{ role: "system", content: updatedSubtitleChunkPrompt }]
+    });
+    return session;
 }
